@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Building Type Gallery</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+            text-align: center;
+        }
+        header {
+            margin-bottom: 30px;
+        }
+        button {
+            background-color: #e63946;
+            border: none;
+            padding: 12px 24px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+            margin: 10px;
+        }
+        .category-btn {
+            background-color: #2a2a2a;
+        }
+        .category-btn.active {
+            background-color: #e63946;
+        }
+        button:hover {
+            background-color: #c5303a;
+        }
+        .building-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .building-image {
+            width: 100%;
+            max-height: 500px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: opacity 0.3s;
+        }
+        .loading {
+            font-size: 20px;
+            color: #888;
+            margin: 40px;
+        }
+        .error {
+            color: #e63946;
+            padding: 20px;
+        }
+        .category-buttons {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Building Type Viewer</h1>
+        <div class="category-buttons">
+            <button class="category-btn active" onclick="selectCategory(event, 'modern+building')">Modern</button>
+            <button class="category-btn" onclick="selectCategory(event, 'historical+building')">Historical</button>
+            <button class="category-btn" onclick="selectCategory(event, 'skyscraper')">Skyscrapers</button>
+            <button class="category-btn" onclick="selectCategory(event, 'house')">Houses</button>
+        </div>
+        <button onclick="fetchNewBuilding()">Next Building</button>
+    </header>
+
+    <div class="building-container" id="buildingContainer">
+        <div class="loading">Loading first building...</div>
+    </div>
+
+    <script>
+        const ACCESS_KEY = '4I-l0DnOuwvWF2UTW5HLDHw99l-knIVZF9Z5UcjK3G8';
+        let isLoading = false;
+        let selectedCategory = 'modern+building';
+
+        function selectCategory(event, category) {
+            // Update active button styling
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Set new category and fetch
+            selectedCategory = category;
+            fetchNewBuilding();
+        }
+
+        async function fetchNewBuilding() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            document.getElementById('buildingContainer').innerHTML = '<div class="loading">Loading new building...</div>';
+            
+            try {
+                const response = await fetch(
+                    `https://api.unsplash.com/photos/random?query=${selectedCategory}&client_id=${ACCESS_KEY}`
+                );
+                
+                if (!response.ok) throw new Error('Failed to fetch building');
+                
+                const data = await response.json();
+                showBuilding(data);
+            } catch (error) {
+                document.getElementById('buildingContainer').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+            
+            isLoading = false;
+        }
+
+        function showBuilding(building) {
+            const container = document.getElementById('buildingContainer');
+            container.innerHTML = `
+                <img src="${building.urls.regular}" 
+                     class="building-image" 
+                     alt="${building.alt_description || 'Building image'}"
+                     style="opacity: 0"
+                     onload="this.style.opacity = 1">
+            `;
+        }
+
+        // Load first building on startup
+        fetchNewBuilding();
+    </script>
+</body>
+</html>
