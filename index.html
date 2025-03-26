@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <title>Building Type Gallery</title>
     <style>
         body {
@@ -39,10 +40,17 @@
             margin: 0 auto;
             padding: 20px;
         }
+        .image-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
         .building-image {
-            width: 100%;
-            max-height: 500px;
-            object-fit: cover;
+            max-width: 100%;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: opacity 0.3s;
@@ -58,6 +66,22 @@
         }
         .category-buttons {
             margin: 20px 0;
+        }
+        .download-btn {
+            background-color: #e63946;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .download-btn:hover {
+            background-color: #c5303a;
+        }
+        .download-icon {
+            width: 16px;
+            height: 16px;
+            filter: invert(1);
         }
     </style>
 </head>
@@ -81,15 +105,13 @@
         const ACCESS_KEY = '4I-l0DnOuwvWF2UTW5HLDHw99l-knIVZF9Z5UcjK3G8';
         let isLoading = false;
         let selectedCategory = 'modern+building';
+        let currentImageUrl = '';
 
         function selectCategory(event, category) {
-            // Update active button styling
             document.querySelectorAll('.category-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
-            
-            // Set new category and fetch
             selectedCategory = category;
             fetchNewBuilding();
         }
@@ -108,6 +130,7 @@
                 if (!response.ok) throw new Error('Failed to fetch building');
                 
                 const data = await response.json();
+                currentImageUrl = data.urls.regular;
                 showBuilding(data);
             } catch (error) {
                 document.getElementById('buildingContainer').innerHTML = 
@@ -117,15 +140,46 @@
             isLoading = false;
         }
 
+        function downloadImage() {
+            if (!currentImageUrl) return;
+            
+            const link = document.createElement('a');
+            link.href = currentImageUrl;
+            link.download = `building-${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function showBuilding(building) {
             const container = document.getElementById('buildingContainer');
-            container.innerHTML = `
-                <img src="${building.urls.regular}" 
-                     class="building-image" 
-                     alt="${building.alt_description || 'Building image'}"
-                     style="opacity: 0"
-                     onload="this.style.opacity = 1">
-            `;
+            const img = new Image();
+            
+            img.onload = function() {
+                container.innerHTML = `
+                    <div class="image-wrapper">
+                        <img src="${building.urls.regular}" 
+                             class="building-image" 
+                             alt="${building.alt_description || 'Building image'}"
+                             style="opacity: 0; max-height: ${Math.min(this.height, window.innerHeight * 0.8)}px"
+                             onload="this.style.opacity = 1">
+                        <button class="download-btn" onclick="downloadImage()">
+                            <i class="fas fa-download"></i> Download Image
+                        </button>
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    const displayedImg = container.querySelector('.building-image');
+                    if (displayedImg) displayedImg.style.opacity = 1;
+                }, 10);
+            };
+            
+            img.onerror = function() {
+                container.innerHTML = `<div class="error">Error loading image</div>`;
+            };
+            
+            img.src = building.urls.regular;
         }
 
         // Load first building on startup
